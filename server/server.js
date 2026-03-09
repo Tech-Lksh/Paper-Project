@@ -1,34 +1,83 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const connectDB = require("./config/db");
+require("dotenv").config();
 
-dotenv.config();
-connectDB();
+const express = require("express");
+const helmet = require("helmet");
+const cors = require("cors");
+const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("@exortek/express-mongo-sanitize");
+
+const connectDB = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+/* SECURITY MIDDLEWARE */
 
-// Routes
-app.use("/api/users", require("./routes/userRoutes"));
+app.use(helmet());
 
-// Basic Route
-app.get("/", (req, res) => {
-  res.send("Server is running...");
+app.use(
+  mongoSanitize({
+    replaceWith: "_"
+  })
+);
+
+app.use(cors({
+  origin: "*",
+  credentials: true
+}));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later"
+  }
 });
 
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  res.status(500).json({
-    message: err.message,
+app.use("/api", limiter);
+
+/* BODY PARSER */
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* ROUTES */
+
+app.use("/api/users", userRoutes);
+
+/* HEALTH CHECK */
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server running successfully"
   });
 });
 
+/* GLOBAL ERROR HANDLER */
+
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error"
+  });
+});
+
+/* START SERVER */
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+
+};
+
+startServer();
