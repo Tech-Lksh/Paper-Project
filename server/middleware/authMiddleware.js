@@ -12,7 +12,7 @@ to request object.
 const authMiddleware = (req, res, next) => {
   try {
 
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || req.headers.Authorization;
 
     if (!authHeader) {
       return res.status(401).json({
@@ -23,7 +23,7 @@ const authMiddleware = (req, res, next) => {
 
     const parts = authHeader.split(" ");
 
-    if (parts.length !== 2 || parts[0] !== "Bearer") {
+    if (!parts || parts.length !== 2 || parts[0] !== "Bearer") {
       return res.status(401).json({
         success: false,
         message: "Invalid authorization format"
@@ -31,6 +31,13 @@ const authMiddleware = (req, res, next) => {
     }
 
     const token = parts[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Token missing"
+      });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 

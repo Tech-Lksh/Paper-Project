@@ -8,6 +8,7 @@ const mongoSanitize = require("@exortek/express-mongo-sanitize");
 
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
+const paperRoutes = require("./routes/paperRoutes");
 
 const app = express();
 
@@ -42,9 +43,18 @@ app.use("/api", limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/*
+-----------------------------------------
+STATIC FILE ACCESS (IMPORTANT)
+-----------------------------------------
+Allow public access to uploaded papers
+*/
+app.use("/uploads", express.static("uploads"));
+
 /* ROUTES */
 
 app.use("/api/users", userRoutes);
+app.use("/api/papers", paperRoutes);
 
 /* HEALTH CHECK */
 
