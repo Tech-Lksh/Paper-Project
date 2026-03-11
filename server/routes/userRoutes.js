@@ -7,11 +7,13 @@ const {
   register,
   login,
   logout,
+  updateProfile,
   getProfile,
   updateProfileImage,
   grantStudent,
   rejectStudent,
-  ungrantStudent
+  ungrantStudent,
+  getDepartmentStudents
 } = require("../controller/userController");
 
 const { authMiddleware, isProfessor } = require("../middleware/authMiddleware");
@@ -42,7 +44,11 @@ AUTH ROUTES
 -----------------------------------------
 */
 
-router.post("/register", register);
+router.post(
+  "/register",
+  upload.single("image"),
+  register
+);
 
 router.post("/login", login);
 
@@ -57,13 +63,20 @@ PROFILE ROUTES
 // GET PROFILE
 router.get("/profile", authMiddleware, getProfile);
 
-// UPDATE PROFILE IMAGE
 router.put(
-  "/profile/image",
+  "/profile",
   authMiddleware,
   upload.single("image"),
-  updateProfileImage
+  updateProfile
 );
+
+// UPDATE PROFILE IMAGE
+// router.put(
+//   "/profile/image",
+//   authMiddleware,
+//   upload.single("image"),
+//   updateProfileImage
+// );
 
 /*
 -----------------------------------------
@@ -79,5 +92,13 @@ router.put("/reject-student/:id", authMiddleware, isProfessor, rejectStudent);
 
 // UNGRANT STUDENT
 router.put("/ungrant-student/:id", authMiddleware, isProfessor, ungrantStudent);
+
+
+router.get(
+  "/department-students",
+  authMiddleware,
+  isProfessor,
+  getDepartmentStudents
+);
 
 module.exports = router;

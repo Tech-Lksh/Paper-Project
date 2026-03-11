@@ -1,6 +1,9 @@
 const User = require("../models/UserSchema");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
+const mongoose = require("mongoose");
 
 /*
 -----------------------------------------
@@ -58,6 +61,13 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // IMAGE HANDLE
+    let profileImage = "default.png";
+
+    if (req.file) {
+      profileImage = req.file.filename;
+    }
+
     const newUser = await User.create({
       name,
       email,
@@ -66,6 +76,7 @@ exports.register = async (req, res) => {
       year,
       semester,
       department,
+      profileImage,
       granted: type === "Professor" ? "approved" : null
     });
 
@@ -77,6 +88,7 @@ exports.register = async (req, res) => {
       year: newUser.year,
       semester: newUser.semester,
       department: newUser.department,
+      profileImage: newUser.profileImage,
       createdAt: newUser.createdAt
     };
 
@@ -183,11 +195,90 @@ exports.login = async (req, res) => {
 GET USER PROFILE
 -----------------------------------------
 */
+/*
+-----------------------------------------
+GET USER PROFILE
+-----------------------------------------
+*/
+
+
+
+
+
 exports.getProfile = async (req, res) => {
+try {
+
+// Debug
+console.log("REQ USER:", req.user);
+
+if (!req.user || !req.user.id) {
+  return res.status(401).json({
+    success: false,
+    message: "Unauthorized"
+  });
+}
+
+// Find user
+const user = await User.findById(req.user.id).select("-password").lean();
+
+console.log("USER FROM DB:", user);
+
+if (!user) {
+  return res.status(404).json({
+    success: false,
+    message: "User not found"
+  });
+}
+
+
+// Build profile image URL
+let profileImageUrl = null;
+
+if (user.profileImage) {
+  profileImageUrl = req.protocol + "://" + req.get("host") + "/uploads/profile/" + user.profileImage;
+}
+
+return res.status(200).json({
+  success: true,
+  message: "Profile fetched successfully",
+  user: {
+    ...user,
+    profileImageUrl: profileImageUrl
+  }
+});
+
+} catch (error) {
+
+
+console.error("GET PROFILE ERROR:", error);
+
+return res.status(500).json({
+  success: false,
+  message: "Internal server error"
+});
+
+
+}
+};
+
+
+/*
+-----------------------------------------
+UPDATE USER PROFILE
+-----------------------------------------
+Allow partial update
+-----------------------------------------
+*/
+
+
+
+exports.updateProfile = async (req, res) => {
 
   try {
 
-    const user = await User.findById(req.user.id).select("-password");
+    const { name, year, semester, department } = req.body;
+
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -196,14 +287,46 @@ exports.getProfile = async (req, res) => {
       });
     }
 
+    // TEXT FIELD UPDATE
+    if (name) user.name = name;
+    if (year) user.year = year;
+    if (semester) user.semester = semester;
+    if (department) user.department = department;
+
+    // IMAGE UPDATE
+    if (req.file) {
+
+      // delete old image
+      if (user.profileImage !== "default.png") {
+
+        const oldPath = path.join(
+          __dirname,
+          "..",
+          "uploads/profile",
+          user.profileImage
+        );
+
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+
+      }
+
+      user.profileImage = req.file.filename;
+
+    }
+
+    await user.save();
+
     return res.status(200).json({
       success: true,
+      message: "Profile updated successfully",
       user
     });
 
   } catch (error) {
 
-    console.error("PROFILE ERROR:", error);
+    console.error("UPDATE PROFILE ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -213,6 +336,7 @@ exports.getProfile = async (req, res) => {
   }
 
 };
+
 
 
 /*
@@ -231,13 +355,34 @@ exports.updateProfileImage = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      {
-        profileImage: req.file.filename
-      },
-      { new: true }
-    ).select("-password");
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // delete old image if not default
+    if (user.profileImage !== "default.png") {
+
+      const oldPath = path.join(
+        __dirname,
+        "..",
+        "uploads/profile",
+        user.profileImage
+      );
+
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+
+    }
+
+    user.profileImage = req.file.filename;
+
+    await user.save();
 
     return res.status(200).json({
       success: true,
@@ -247,7 +392,7 @@ exports.updateProfileImage = async (req, res) => {
 
   } catch (error) {
 
-    console.error("UPDATE IMAGE ERROR:", error);
+    console.error("IMAGE UPDATE ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -437,6 +582,57 @@ exports.ungrantStudent = async (req, res) => {
 
   }
 
+};
+
+
+exports.getDepartmentStudents = async (req, res) => {
+  try {
+
+    console.log("REQUEST USER:", req.user);
+
+    if (!req.user || req.user.type !== "Professor") {
+      return res.status(403).json({
+        success: false,
+        message: "Only professors can access this"
+      });
+    }
+
+    // professor fetch
+    const professor = await User.findById(req.user.id);
+
+    console.log("PROFESSOR DATA:", professor);
+
+    if (!professor) {
+      return res.status(404).json({
+        success: false,
+        message: "Professor not found"
+      });
+    }
+
+    // fetch students from same department
+    const students = await User.find({
+      type: "Student",
+      department: professor.department
+    }).select("-password");
+
+    console.log("STUDENTS FOUND:", students);
+
+    return res.status(200).json({
+      success: true,
+      count: students.length,
+      students
+    });
+
+  } catch (error) {
+
+    console.error("GET STUDENTS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+
+  }
 };
 
 
