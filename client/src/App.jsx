@@ -1,11 +1,16 @@
 // src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import ProfessorDashboard from "./models/admin/professor/ProfessorDashboard";
-import StudentDashboard from "./models/admin/student/StudentDashboard"; // Student Dashboard import kiya
-import Login from "./models/common/Login";
-import Register from "./models/common/Register";
-import Home from "./models/common/Home";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import ProfessorDashboard from "./pages/ProfessorDashboard/ProfessorDashboard";
+import StudentDashboard from "./pages/StudentDashboard/StudentDashboard"; // Student Dashboard import kiya
+import Login from "./components/Login";
+import Register from "./components/Register";
+import Home from "./components/Home";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -24,7 +29,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
-          path="/professor-dashboard"
+          path="/professor-dashboard/*"
           element={
             <ProtectedRoute>
               <ProfessorDashboard />
@@ -32,7 +37,7 @@ function App() {
           }
         />
         <Route
-          path="/student-dashboard"
+          path="/student-dashboard/*"
           element={
             <ProtectedRoute>
               <StudentDashboard />

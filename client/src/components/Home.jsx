@@ -16,10 +16,10 @@ import {
   Loader,
   X,
   BookMarked,
-  FolderOpen
+  FolderOpen,
 } from "lucide-react";
-import axiosInstance from "../../api/axios";
-import Navbar from "../common/Navbar"
+import axiosInstance from "../api/axios";
+import Navbar from "./Navbar";
 
 const Home = () => {
   const [papers, setPapers] = useState([]);
@@ -28,12 +28,12 @@ const Home = () => {
   const [filters, setFilters] = useState({
     branch: "",
     year: "",
-    semester: ""
+    semester: "",
   });
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
-    limit: 12
+    limit: 12,
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -42,65 +42,77 @@ const Home = () => {
   const filterTimeout = useRef(null);
 
   // Branch options as per schema
-  const branchOptions = ["CSE", "MECH", "DS", "IOT", "ECE", "EEE", "CIVIL", "IT"];
-  
+  const branchOptions = [
+    "CSE",
+    "MECH",
+    "DS",
+    "IOT",
+    "ECE",
+    "EEE",
+    "CIVIL",
+    "IT",
+  ];
+
   // Year options as per schema
   const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-  
+
   // Semester options as per schema
   const semesterOptions = [1, 2, 3, 4, 5, 6, 7, 8];
 
   // Fetch public papers
-  const fetchPapers = useCallback(async (pageNum = pagination.page) => {
-    try {
-      setLoading(true);
-      
-      // Agar search ya filters hain toh search endpoint use karo
-      if (searchTerm || filters.branch || filters.year || filters.semester) {
-        const params = new URLSearchParams({
-          page: pageNum,
-          limit: pagination.limit
-        });
-        
-        if (searchTerm) params.append("search", searchTerm);
-        if (filters.branch) params.append("branch", filters.branch);
-        if (filters.year) params.append("year", filters.year);
-        if (filters.semester) params.append("semester", filters.semester);
+  const fetchPapers = useCallback(
+    async (pageNum = pagination.page) => {
+      try {
+        setLoading(true);
 
-        const response = await axiosInstance.get(`/papers/search?${params}`);
-        
-        if (response.data.success) {
-          setPapers(response.data.papers);
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.total,
-            page: response.data.page
-          }));
+        // Agar search ya filters hain toh search endpoint use karo
+        if (searchTerm || filters.branch || filters.year || filters.semester) {
+          const params = new URLSearchParams({
+            page: pageNum,
+            limit: pagination.limit,
+          });
+
+          if (searchTerm) params.append("search", searchTerm);
+          if (filters.branch) params.append("branch", filters.branch);
+          if (filters.year) params.append("year", filters.year);
+          if (filters.semester) params.append("semester", filters.semester);
+
+          const response = await axiosInstance.get(`/papers/search?${params}`);
+
+          if (response.data.success) {
+            setPapers(response.data.papers);
+            setPagination((prev) => ({
+              ...prev,
+              total: response.data.total,
+              page: response.data.page,
+            }));
+          }
+        } else {
+          // Warna public papers endpoint use karo
+          const params = new URLSearchParams({
+            page: pageNum,
+            limit: pagination.limit,
+          });
+
+          const response = await axiosInstance.get(`/papers/public?${params}`);
+
+          if (response.data.success) {
+            setPapers(response.data.papers);
+            setPagination((prev) => ({
+              ...prev,
+              total: response.data.total,
+              page: response.data.page,
+            }));
+          }
         }
-      } else {
-        // Warna public papers endpoint use karo
-        const params = new URLSearchParams({
-          page: pageNum,
-          limit: pagination.limit
-        });
-        
-        const response = await axiosInstance.get(`/papers/public?${params}`);
-        
-        if (response.data.success) {
-          setPapers(response.data.papers);
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.total,
-            page: response.data.page
-          }));
-        }
+      } catch (error) {
+        console.error("Error fetching papers:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching papers:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.limit, searchTerm, filters]);
+    },
+    [pagination.limit, searchTerm, filters],
+  );
 
   // Initial fetch
   useEffect(() => {
@@ -115,7 +127,7 @@ const Home = () => {
   // Debounced search
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
 
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
@@ -128,8 +140,8 @@ const Home = () => {
 
   // Handle filter change
   const handleFilterChange = (type, value) => {
-    setFilters(prev => ({ ...prev, [type]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setFilters((prev) => ({ ...prev, [type]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
 
     if (filterTimeout.current) {
       clearTimeout(filterTimeout.current);
@@ -144,20 +156,20 @@ const Home = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setFilters({ branch: "", year: "", semester: "" });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   // Handle paper download
   const handleDownloadPaper = async (filename) => {
     try {
       const response = await axiosInstance.get(`/papers/download/${filename}`, {
-        responseType: 'blob'
+        responseType: "blob",
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -170,10 +182,10 @@ const Home = () => {
   // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -199,7 +211,8 @@ const Home = () => {
                 Academic Papers Repository
               </h1>
               <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-                Access thousands of academic papers, question papers, and study materials from various departments and branches
+                Access thousands of academic papers, question papers, and study
+                materials from various departments and branches
               </p>
             </div>
           </div>
@@ -244,38 +257,49 @@ const Home = () => {
                 <Filter className="h-5 w-5 text-gray-400" />
                 <select
                   value={filters.branch}
-                  onChange={(e) => handleFilterChange('branch', e.target.value)}
+                  onChange={(e) => handleFilterChange("branch", e.target.value)}
                   className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Branches</option>
-                  {branchOptions.map(branch => (
-                    <option key={branch} value={branch}>{branch}</option>
+                  {branchOptions.map((branch) => (
+                    <option key={branch} value={branch}>
+                      {branch}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={filters.year}
-                  onChange={(e) => handleFilterChange('year', e.target.value)}
+                  onChange={(e) => handleFilterChange("year", e.target.value)}
                   className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Years</option>
-                  {yearOptions.map(year => (
-                    <option key={year} value={year}>{year}</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={filters.semester}
-                  onChange={(e) => handleFilterChange('semester', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("semester", e.target.value)
+                  }
                   className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Semesters</option>
-                  {semesterOptions.map(sem => (
-                    <option key={sem} value={sem}>{getSemesterDisplay(sem)}</option>
+                  {semesterOptions.map((sem) => (
+                    <option key={sem} value={sem}>
+                      {getSemesterDisplay(sem)}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Clear Filters Button */}
-              {(searchTerm || filters.branch || filters.year || filters.semester) && (
+              {(searchTerm ||
+                filters.branch ||
+                filters.year ||
+                filters.semester) && (
                 <button
                   onClick={clearFilters}
                   className="px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center space-x-2"
@@ -291,32 +315,40 @@ const Home = () => {
               <div className="mt-4 md:hidden space-y-3">
                 <select
                   value={filters.branch}
-                  onChange={(e) => handleFilterChange('branch', e.target.value)}
+                  onChange={(e) => handleFilterChange("branch", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Branches</option>
-                  {branchOptions.map(branch => (
-                    <option key={branch} value={branch}>{branch}</option>
+                  {branchOptions.map((branch) => (
+                    <option key={branch} value={branch}>
+                      {branch}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={filters.year}
-                  onChange={(e) => handleFilterChange('year', e.target.value)}
+                  onChange={(e) => handleFilterChange("year", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Years</option>
-                  {yearOptions.map(year => (
-                    <option key={year} value={year}>{year}</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
                 </select>
                 <select
                   value={filters.semester}
-                  onChange={(e) => handleFilterChange('semester', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("semester", e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   <option value="">All Semesters</option>
-                  {semesterOptions.map(sem => (
-                    <option key={sem} value={sem}>{getSemesterDisplay(sem)}</option>
+                  {semesterOptions.map((sem) => (
+                    <option key={sem} value={sem}>
+                      {getSemesterDisplay(sem)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -327,13 +359,20 @@ const Home = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
-                {searchTerm || filters.branch || filters.year || filters.semester ? 'Search Results' : 'Latest Papers'}
+                {searchTerm ||
+                filters.branch ||
+                filters.year ||
+                filters.semester
+                  ? "Search Results"
+                  : "Latest Papers"}
               </h2>
               <p className="text-gray-600">
                 Showing {papers.length} of {pagination.total} papers
               </p>
             </div>
-            {loading && <Loader className="h-5 w-5 text-blue-600 animate-spin" />}
+            {loading && (
+              <Loader className="h-5 w-5 text-blue-600 animate-spin" />
+            )}
           </div>
 
           {/* Papers Grid */}
@@ -370,7 +409,9 @@ const Home = () => {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>{paper.year} • {getSemesterDisplay(paper.semester)}</span>
+                        <span>
+                          {paper.year} • {getSemesterDisplay(paper.semester)}
+                        </span>
                       </div>
                       {paper.className && (
                         <div className="flex items-center text-sm text-gray-600">
@@ -403,7 +444,10 @@ const Home = () => {
                     No papers found
                   </h3>
                   <p className="text-gray-500">
-                    {searchTerm || filters.branch || filters.year || filters.semester
+                    {searchTerm ||
+                    filters.branch ||
+                    filters.year ||
+                    filters.semester
                       ? "Try adjusting your search or filters"
                       : "No papers have been uploaded yet"}
                   </p>
@@ -417,7 +461,7 @@ const Home = () => {
             <div className="flex justify-center items-center space-x-4 mt-8">
               <button
                 onClick={() => {
-                  setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+                  setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
                   fetchPapers(pagination.page - 1);
                 }}
                 disabled={pagination.page === 1}
@@ -426,14 +470,18 @@ const Home = () => {
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <span className="text-sm text-gray-600">
-                Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+                Page {pagination.page} of{" "}
+                {Math.ceil(pagination.total / pagination.limit)}
               </span>
               <button
                 onClick={() => {
-                  setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+                  setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
                   fetchPapers(pagination.page + 1);
                 }}
-                disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                disabled={
+                  pagination.page >=
+                  Math.ceil(pagination.total / pagination.limit)
+                }
                 className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
