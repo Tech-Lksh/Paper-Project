@@ -268,8 +268,93 @@ project-root
 
 ---
 
+## 🔗 API Endpoints
 
-ScreenShots
+Base URL
 
-Home
+```
+http://localhost:5000/api
+```
 
+---
+
+# 👤 User Authentication & Profile APIs
+
+| Method | Endpoint | Description | Access |
+|------|------|------|------|
+| POST | `/user/register` | Register a new user (Student / Professor) | Public |
+| POST | `/user/login` | Login user | Public |
+| POST | `/user/logout` | Logout user | Authenticated |
+| GET | `/user/profile` | Get logged-in user profile | Authenticated |
+| PUT | `/user/profile` | Update user profile (with image upload) | Authenticated |
+
+---
+
+# 👨‍🏫 Professor Control APIs
+
+| Method | Endpoint | Description | Access |
+|------|------|------|------|
+| PUT | `/user/grant-student/:id` | Approve student account | Professor |
+| PUT | `/user/reject-student/:id` | Reject student registration | Professor |
+| PUT | `/user/ungrant-student/:id` | Remove student access | Professor |
+| GET | `/user/department-students` | Get students of professor's department | Professor |
+
+---
+
+# 📄 Paper Management APIs
+
+## Public APIs
+
+| Method | Endpoint | Description | Access |
+|------|------|------|------|
+| GET | `/papers/public` | Get all public question papers | Public |
+| GET | `/papers/download/:filename` | Download paper file | Public |
+| GET | `/papers/search` | Search papers with filters | Public |
+
+---
+
+## Authenticated APIs
+
+| Method | Endpoint | Description | Access |
+|------|------|------|------|
+| POST | `/papers/upload` | Upload question paper | Authenticated |
+| GET | `/papers` | Get dashboard papers | Authenticated |
+| GET | `/papers/my-papers` | Get papers uploaded by user | Authenticated |
+| PUT | `/papers/edit/:id` | Edit uploaded paper | Uploader |
+| DELETE | `/papers/:id` | Delete uploaded paper | Uploader |
+
+---
+
+# 📂 File Upload Endpoints
+
+| Endpoint | Field Name | Description |
+|------|------|------|
+| `/user/register` | `image` | Profile image upload |
+| `/user/profile` | `image` | Update profile image |
+| `/papers/upload` | `paperFile` | Upload question paper |
+
+---
+
+# 🔐 Authentication
+
+The application uses **JWT-based authentication**.
+
+Protected routes require a valid token in headers:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+# 📦 API Features
+
+✔ User Authentication (Register / Login / Logout)  
+✔ Professor Approval System for Students  
+✔ Upload Previous Year Question Papers  
+✔ Search & Filter Question Papers  
+✔ Download Papers  
+✔ Dashboard for Students and Professors  
+✔ Role-based Access Control  
+
+---
