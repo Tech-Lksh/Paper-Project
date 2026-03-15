@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../../api/axios";  // ← axiosInstance import kiya
 import { Link } from "react-router-dom";
 
 const Profile = () => {
@@ -22,7 +22,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users/profile", {
+      const res = await axiosInstance.get("/users/profile", {  // ← axiosInstance use
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -68,7 +68,7 @@ const Profile = () => {
         data.append("image", image);
       }
 
-      await axios.put("http://localhost:5000/api/users/profile", data, {
+      await axiosInstance.put("/users/profile", data, {  // ← axiosInstance use
         headers: {
           Authorization: `Bearer ${token}`,
         },

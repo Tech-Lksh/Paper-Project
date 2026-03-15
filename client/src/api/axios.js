@@ -1,19 +1,20 @@
+// utils/axios.js
 import axios from "axios";
 
-/*
------------------------------------------
-AXIOS INSTANCE
------------------------------------------
-Central backend URL configuration
------------------------------------------
-*/
-
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/api",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  timeout: 10000
+  baseURL: "http://localhost:5000/api",
 });
+
+// Request interceptor to attach token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default axiosInstance;

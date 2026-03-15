@@ -18,13 +18,13 @@ exports.uploadPaper = async (req, res) => {
       });
     }
 
-    const { subjectName, subjectCode, branch, year, semester, className } = req.body;
+    const { subjectName, subjectCode, branch, year, semester, className, examType } = req.body;
 
     // Mandatory field validation
-    if (!subjectName || !subjectCode || !branch || !year || !semester) {
+    if (!subjectName || !subjectCode || !branch || !year || !semester || !examType) {
       return res.status(400).json({
         success: false,
-        message: "subjectName, subjectCode, branch, year, semester are required"
+        message: "subjectName, subjectCode, branch, year, semester, examType are required"
       });
     }
 
@@ -37,7 +37,8 @@ exports.uploadPaper = async (req, res) => {
       className: className || null,
       paperFile: req.file.filename,
       uploadedBy: req.user.id,
-      uploaderRole: req.user.type
+      uploaderRole: req.user.type,
+      examType  // <-- new field added here
     });
 
     return res.status(201).json({
@@ -77,6 +78,7 @@ exports.getPapers = async (req, res) => {
       // Student dashboard: only own papers
       papers = await Paper.find({ uploadedBy: user._id })
                           .populate("uploadedBy", "name email type department");
+      // examType automatically included in the Paper documents
     } else if (user.type === "Professor") {
       // Professor dashboard: own papers + same dept students papers
       papers = await Paper.find({
@@ -85,6 +87,7 @@ exports.getPapers = async (req, res) => {
           { branch: user.department, uploaderRole: "Student" }
         ]
       }).populate("uploadedBy", "name email type department");
+      // examType automatically included here too
     }
 
     return res.status(200).json({
@@ -129,7 +132,7 @@ exports.editPaper = async (req, res) => {
 
     const body = req.body || {};
 
-    const { subjectName, subjectCode, branch, year, semester, className } = body;
+    const { subjectName, subjectCode, branch, year, semester, className, examType } = body;
 
     if (subjectName !== undefined) {
       paper.subjectName = subjectName;
@@ -155,6 +158,10 @@ exports.editPaper = async (req, res) => {
       paper.className = className;
     }
 
+    if (examType !== undefined) {
+      paper.examType = examType; // ✅ Added examType update
+    }
+
     await paper.save();
 
     return res.json({
@@ -177,6 +184,7 @@ exports.editPaper = async (req, res) => {
 DELETE PAPER
 -----------------------------------------
 */
+// DELETE PAPER
 exports.deletePaper = async (req, res) => {
   try {
     const paper = await Paper.findById(req.params.id);
@@ -212,16 +220,15 @@ exports.deletePaper = async (req, res) => {
   }
 };
 
-
+// PUBLIC PAPERS
 exports.publicPapers = async (req, res) => {
   try {
-
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const skip = (page - 1) * limit;
 
     const papers = await Paper.find({})
-      .select("subjectName subjectCode branch year semester className paperFile createdAt")
+      .select("subjectName subjectCode branch year semester className examType paperFile createdAt") // ✅ examType added
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -245,13 +252,9 @@ exports.publicPapers = async (req, res) => {
   }
 };
 
-
-
-
-
+// DOWNLOAD PAPER
 exports.downloadPaper = async (req, res) => {
   try {
-
     const fileName = req.params.filename;
 
     if (!fileName) {
@@ -282,16 +285,15 @@ exports.downloadPaper = async (req, res) => {
   }
 };
 
-
-
+// MY UPLOADED PAPERS
 exports.myUploadedPapers = async (req, res) => {
   try {
-
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const skip = (page - 1) * limit;
 
     const papers = await Paper.find({ uploadedBy: req.user.id })
+      .select("subjectName subjectCode branch year semester className examType paperFile createdAt") // ✅ examType added
       .populate("uploadedBy", "name email type")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -316,11 +318,9 @@ exports.myUploadedPapers = async (req, res) => {
   }
 };
 
-
-
+// SEARCH PAPERS
 exports.searchPapers = async (req, res) => {
   try {
-
     const {
       search,
       branch,
@@ -328,6 +328,7 @@ exports.searchPapers = async (req, res) => {
       semester,
       className,
       uploaderRole,
+      examType, // ✅ Added examType filter
       page = 1,
       limit = 20
     } = req.query;
@@ -335,7 +336,6 @@ exports.searchPapers = async (req, res) => {
     const query = {};
 
     /* AUTO SEARCH (1 letter bhi chalega) */
-
     if (search) {
       query.$or = [
         { subjectName: { $regex: search, $options: "i" } },
@@ -343,23 +343,18 @@ exports.searchPapers = async (req, res) => {
         { branch: { $regex: search, $options: "i" } },
         { year: { $regex: search, $options: "i" } },
         { className: { $regex: search, $options: "i" } },
-        { uploaderRole: { $regex: search, $options: "i" } }
+        { uploaderRole: { $regex: search, $options: "i" } },
+        { examType: { $regex: search, $options: "i" } } // ✅ Include examType in search
       ];
     }
 
     /* FILTERS */
-
     if (branch) query.branch = branch;
-
     if (year) query.year = year;
-
     if (semester) query.semester = Number(semester);
-
-    if (className) {
-      query.className = { $regex: className, $options: "i" };
-    }
-
+    if (className) query.className = { $regex: className, $options: "i" };
     if (uploaderRole) query.uploaderRole = uploaderRole;
+    if (examType) query.examType = examType; // ✅ Filter by examType
 
     const safeLimit = Math.min(parseInt(limit), 100);
     const skip = (parseInt(page) - 1) * safeLimit;
@@ -380,13 +375,11 @@ exports.searchPapers = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error("SEARCH PAPER ERROR:", error);
 
     return res.status(500).json({
       success: false,
       message: "Search failed"
     });
-
   }
 };

@@ -1,492 +1,200 @@
-// src/models/common/Home.jsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Search,
-  Filter,
-  Download,
-  FileText,
-  BookOpen,
-  Calendar,
-  Users,
-  GraduationCap,
-  Building2,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Loader,
-  X,
-  BookMarked,
-  FolderOpen,
-} from "lucide-react";
-import axiosInstance from "../api/axios";
+import React, { useEffect, useState, useRef } from "react";
 import Navbar from "./Navbar";
+import axiosInstance from "../api/axios";
 
-const Home = () => {
+const HomeWithPapers = () => {
   const [papers, setPapers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     branch: "",
     year: "",
     semester: "",
+    uploaderRole: "",
+    examType: ""
   });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    total: 0,
-    limit: 12,
-  });
-  const [showFilters, setShowFilters] = useState(false);
 
-  // Debounce timer ref
-  const searchTimeout = useRef(null);
-  const filterTimeout = useRef(null);
+  const filterSectionRef = useRef(null);
 
-  // Branch options as per schema
-  const branchOptions = [
-    "CSE",
-    "MECH",
-    "DS",
-    "IOT",
-    "ECE",
-    "EEE",
-    "CIVIL",
-    "IT",
-  ];
+  const fetchPapers = async () => {
+    try {
+      const params = { search, ...filters };
+      const res = await axiosInstance.get("/papers/search", { params });
+      setPapers(res.data.papers);
+    } catch (error) {
+      console.error("Error fetching papers", error);
+    }
+  };
 
-  // Year options as per schema
-  const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-
-  // Semester options as per schema
-  const semesterOptions = [1, 2, 3, 4, 5, 6, 7, 8];
-
-  // Fetch public papers
-  const fetchPapers = useCallback(
-    async (pageNum = pagination.page) => {
-      try {
-        setLoading(true);
-
-        // Agar search ya filters hain toh search endpoint use karo
-        if (searchTerm || filters.branch || filters.year || filters.semester) {
-          const params = new URLSearchParams({
-            page: pageNum,
-            limit: pagination.limit,
-          });
-
-          if (searchTerm) params.append("search", searchTerm);
-          if (filters.branch) params.append("branch", filters.branch);
-          if (filters.year) params.append("year", filters.year);
-          if (filters.semester) params.append("semester", filters.semester);
-
-          const response = await axiosInstance.get(`/papers/search?${params}`);
-
-          if (response.data.success) {
-            setPapers(response.data.papers);
-            setPagination((prev) => ({
-              ...prev,
-              total: response.data.total,
-              page: response.data.page,
-            }));
-          }
-        } else {
-          // Warna public papers endpoint use karo
-          const params = new URLSearchParams({
-            page: pageNum,
-            limit: pagination.limit,
-          });
-
-          const response = await axiosInstance.get(`/papers/public?${params}`);
-
-          if (response.data.success) {
-            setPapers(response.data.papers);
-            setPagination((prev) => ({
-              ...prev,
-              total: response.data.total,
-              page: response.data.page,
-            }));
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching papers:", error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pagination.limit, searchTerm, filters],
-  );
-
-  // Initial fetch
   useEffect(() => {
     fetchPapers();
-  }, []);
+  }, [search, filters]);
 
-  // Effect for search/filter changes
-  useEffect(() => {
-    fetchPapers(1);
-  }, [searchTerm, filters]);
-
-  // Debounced search
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-    setPagination((prev) => ({ ...prev, page: 1 }));
-
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-
-    searchTimeout.current = setTimeout(() => {
-      // fetchPapers already called by useEffect
-    }, 500);
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  // Handle filter change
-  const handleFilterChange = (type, value) => {
-    setFilters((prev) => ({ ...prev, [type]: value }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
-
-    if (filterTimeout.current) {
-      clearTimeout(filterTimeout.current);
-    }
-
-    filterTimeout.current = setTimeout(() => {
-      // fetchPapers already called by useEffect
-    }, 300);
-  };
-
-  // Clear filters
-  const clearFilters = () => {
-    setSearchTerm("");
-    setFilters({ branch: "", year: "", semester: "" });
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  };
-
-  // Handle paper download
-  const handleDownloadPaper = async (filename) => {
-    try {
-      const response = await axiosInstance.get(`/papers/download/${filename}`, {
-        responseType: "blob",
+  const scrollToFilters = () => {
+    if (filterSectionRef.current) {
+      const navbarHeight = 80; // Adjust based on your navbar height
+      const elementTop = filterSectionRef.current.getBoundingClientRect().top;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      window.scrollTo({
+        top: elementTop + scrollTop - navbarHeight,
+        behavior: "smooth"
       });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Error downloading paper. Please try again.");
     }
-  };
-
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Get semester display
-  const getSemesterDisplay = (semester) => {
-    if (!semester) return "N/A";
-    const suffixes = ["th", "st", "nd", "rd"];
-    const v = semester % 100;
-    const suffix = suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0];
-    return `${semester}${suffix} Semester`;
   };
 
   return (
     <>
       <Navbar />
-      {/* Added pt-16 to push content below navbar */}
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 pt-16">
+
+      {/* Add padding-top equal to navbar height to prevent overlap */}
+      <div className="pt-[70px]">
+        
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="text-center">
-              <h1 className="text-5xl font-bold mb-4">
-                Academic Papers Repository
+        <section className="min-h-[90vh] bg-[rgb(252,249,246)] flex flex-col md:flex-row items-center  px-6 md:px-20 py-14">
+          
+          {/* --- MOBILE ONLY VIEW: Image Left, Title Right --- */}
+          <div className="w-full flex md:hidden items-center gap-4 mb-16">
+            <div className="w-1/2  mt-16">
+              <img
+                src="/download (3).jpeg"
+                alt="Handwritten Exam Notes"
+                className="w-full h-auto rounded-xl shadow-lg rotate-3 mb-4 object-cover"
+              />
+            </div>
+            <div className="w-1/2">
+              <h1 className="text-2xl mt-10 sm:text-3xl font-extrabold text-[#2c1e16] leading-tight text-left">
+                All Your Exam Papers,
+                <br />
+                <span className="text-[#4163f8]">In One Place.</span>
               </h1>
-              <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-                Access thousands of academic papers, question papers, and study
-                materials from various departments and branches
-              </p>
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Search and Filter Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search Input */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by subject, code, branch, year..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={clearFilters}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+          {/* --- DESKTOP LEFT CONTENT & MOBILE PARAGRAPH --- */}
+          <div className="w-full md:w-1/2 text-center md:text-left mb-12 md:mb-0">
+            
+            {/* Title specifically for Desktop (hidden on mobile) */}
+            <h1 className="hidden md:block text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#2c1e16] leading-tight mb-6">
+              All Your Exam Papers,
+              <br />
+              <span className="text-[#4163f8]">In One Place.</span>
+            </h1>
+            
+            <p className="text-xl font-semibold text-gray-600 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0 text-start md:text-left">
+              Midterm 1, Midterm 2, aur final notes yahan aasani se share karein. 
+              Apne notes upload karein ya previous year ke papers download karein.
+            </p>
 
-              {/* Filter Toggle Button (Mobile) */}
+            <div className="flex mt-20 flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="md:hidden flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                onClick={scrollToFilters}
+                className="w-full sm:w-auto px-8 py-3 bg-[#4163f8] text-white font-bold rounded-lg shadow-md hover:bg-[#bc8a5c] hover:-translate-y-1 transition-all duration-300 flex justify-center items-center"
               >
-                <Filter className="h-5 w-5" />
-                <span>Filters</span>
+                Filter & Download Papers
               </button>
-
-              {/* Filters - Desktop */}
-              <div className="hidden md:flex items-center space-x-3">
-                <Filter className="h-5 w-5 text-gray-400" />
-                <select
-                  value={filters.branch}
-                  onChange={(e) => handleFilterChange("branch", e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Branches</option>
-                  {branchOptions.map((branch) => (
-                    <option key={branch} value={branch}>
-                      {branch}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filters.year}
-                  onChange={(e) => handleFilterChange("year", e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Years</option>
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filters.semester}
-                  onChange={(e) =>
-                    handleFilterChange("semester", e.target.value)
-                  }
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Semesters</option>
-                  {semesterOptions.map((sem) => (
-                    <option key={sem} value={sem}>
-                      {getSemesterDisplay(sem)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Clear Filters Button */}
-              {(searchTerm ||
-                filters.branch ||
-                filters.year ||
-                filters.semester) && (
-                <button
-                  onClick={clearFilters}
-                  className="px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center space-x-2"
-                >
-                  <X className="h-4 w-4" />
-                  <span>Clear</span>
-                </button>
-              )}
             </div>
-
-            {/* Mobile Filters */}
-            {showFilters && (
-              <div className="mt-4 md:hidden space-y-3">
-                <select
-                  value={filters.branch}
-                  onChange={(e) => handleFilterChange("branch", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Branches</option>
-                  {branchOptions.map((branch) => (
-                    <option key={branch} value={branch}>
-                      {branch}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filters.year}
-                  onChange={(e) => handleFilterChange("year", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Years</option>
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filters.semester}
-                  onChange={(e) =>
-                    handleFilterChange("semester", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">All Semesters</option>
-                  {semesterOptions.map((sem) => (
-                    <option key={sem} value={sem}>
-                      {getSemesterDisplay(sem)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
-          {/* Results Info */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                {searchTerm ||
-                filters.branch ||
-                filters.year ||
-                filters.semester
-                  ? "Search Results"
-                  : "Latest Papers"}
-              </h2>
-              <p className="text-gray-600">
-                Showing {papers.length} of {pagination.total} papers
-              </p>
+          {/* --- DESKTOP ONLY VIEW: Image Right --- */}
+          <div className="hidden md:flex w-full md:w-[55%] justify-center group perspective-1000">
+            <img
+              src="/download (3).jpeg"
+              alt="Handwritten Exam Notes"
+              className="w-full max-w-md h-auto rounded-xl shadow-2xl rotate-3 transition-transform duration-500 ease-out group-hover:rotate-0 group-hover:scale-105 object-cover"
+            />
+          </div>
+          
+        </section>
+
+        {/* SEARCH + FILTER + PAPERS (Baaki code bilkul unchanged) */}
+        <div className="min-h-screen bg-gray-100">
+          <div
+            ref={filterSectionRef}
+            className="bg-white p-6 rounded-xl shadow-md mb-6"
+          >
+            <div className="grid md:grid-cols-7 gap-4">
+              <input
+                type="text"
+                placeholder="Search subject, code, branch..."
+                className="border p-2 rounded-md col-span-2"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select name="branch" className="border p-2 rounded-md" onChange={handleFilterChange}>
+                <option value="">Branch</option>
+                <option value="CSE">CSE</option>
+                <option value="DS">DS</option>
+                <option value="IOT">IOT</option>
+                <option value="ECE">ECE</option>
+                <option value="EEE">EEE</option>
+                <option value="MECH">MECH</option>
+                <option value="CIVIL">CIVIL</option>
+              </select>
+              <select name="year" className="border p-2 rounded-md" onChange={handleFilterChange}>
+                <option value="">Year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+              <select name="semester" className="border p-2 rounded-md" onChange={handleFilterChange}>
+                <option value="">Semester</option>
+                {[1,2,3,4,5,6,7,8].map((sem) => (
+                  <option key={sem} value={sem}>Sem {sem}</option>
+                ))}
+              </select>
+              <select name="uploaderRole" className="border p-2 rounded-md" onChange={handleFilterChange}>
+                <option value="">Uploader</option>
+                <option value="Professor">Professor</option>
+                <option value="Student">Student</option>
+              </select>
+              <select name="examType" className="border p-2 rounded-md" onChange={handleFilterChange}>
+                <option value="">Exam Type</option>
+                <option value="Midterm 1">Midterm 1</option>
+                <option value="Midterm 2">Midterm 2</option>
+              </select>
             </div>
-            {loading && (
-              <Loader className="h-5 w-5 text-blue-600 animate-spin" />
-            )}
           </div>
 
-          {/* Papers Grid */}
-          {loading && papers.length === 0 ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader className="h-8 w-8 text-blue-600 animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {papers.map((paper) => (
-                <div
-                  key={paper._id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100"
-                >
-                  <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {paper.subjectName}
-                        </h3>
-                        <p className="text-sm text-blue-600 font-medium flex items-center">
-                          <BookMarked className="h-3 w-3 mr-1" />
-                          {paper.subjectCode}
-                        </p>
-                      </div>
-                      <FileText className="h-8 w-8 text-gray-300 group-hover:text-blue-500 transition-colors" />
-                    </div>
+          <div className="grid md:grid-cols-5 gap-4">
+            {papers.map((paper) => (
+              <div key={paper._id} className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
+                <h2 className="text-lg font-bold">{paper.subjectName}</h2>
+                <p className="text-sm text-gray-500">{paper.subjectCode}</p>
 
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Building2 className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="truncate">{paper.branch}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>
-                          {paper.year} • {getSemesterDisplay(paper.semester)}
-                        </span>
-                      </div>
-                      {paper.className && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Users className="h-4 w-4 mr-2 text-gray-400" />
-                          <span>Class: {paper.className}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>{formatDate(paper.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    {/* Only Download Button - View Button Hata Diya */}
-                    <button
-                      onClick={() => handleDownloadPaper(paper.paperFile)}
-                      className="w-full px-3 py-2 text-sm font-medium rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Download Paper</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {papers.length === 0 && !loading && (
-                <div className="col-span-full text-center py-16">
-                  <FolderOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 mb-2">
-                    No papers found
-                  </h3>
-                  <p className="text-gray-500">
-                    {searchTerm ||
-                    filters.branch ||
-                    filters.year ||
-                    filters.semester
-                      ? "Try adjusting your search or filters"
-                      : "No papers have been uploaded yet"}
+                <div className="mt-2 text-sm">
+                  <p><b>Branch:</b> {paper.branch}</p>
+                  <p><b>Year:</b> {paper.year}</p>
+                  <p><b>Semester:</b> {paper.semester}</p>
+                  {paper.className && <p><b>Class:</b> {paper.className}</p>}
+                  {paper.examType && <p><b>ExamType:</b> {paper.examType}</p>}
+                  <p className="text-xs text-gray-700 mt-2">
+                    Uploaded on:{" "}
+                    {new Date(paper.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric"
+                    })}
                   </p>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Pagination */}
-          {pagination.total > pagination.limit && !loading && (
-            <div className="flex justify-center items-center space-x-4 mt-8">
-              <button
-                onClick={() => {
-                  setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
-                  fetchPapers(pagination.page - 1);
-                }}
-                disabled={pagination.page === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <span className="text-sm text-gray-600">
-                Page {pagination.page} of{" "}
-                {Math.ceil(pagination.total / pagination.limit)}
-              </span>
-              <button
-                onClick={() => {
-                  setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
-                  fetchPapers(pagination.page + 1);
-                }}
-                disabled={
-                  pagination.page >=
-                  Math.ceil(pagination.total / pagination.limit)
-                }
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
+                <div className="mt-4 flex justify-between">
+                  <a
+                    href={`${axiosInstance.defaults.baseURL}/papers/download/${paper.paperFile}`}
+                    className="bg-green-500 text-white px-3 py-1 rounded-md"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {papers.length === 0 && (
+            <p className="text-center text-gray-500 mt-10">No papers found</p>
           )}
         </div>
       </div>
@@ -494,4 +202,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeWithPapers;

@@ -56,6 +56,13 @@ const paperSchema = new mongoose.Schema(
       type: String,
       enum: ["Professor", "Student"],
       required: true
+    },
+
+    // NEW FIELD - Midterm Type
+    examType: {
+      type: String,
+      enum: ["Midterm 1", "Midterm 2"],
+      required: true
     }
 
   },

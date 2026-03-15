@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../../api/axios";  // ← axiosInstance import kiya
 
 const ProfessorUploadPaper = () => {
-
   const [papers, setPapers] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
@@ -13,25 +12,19 @@ const ProfessorUploadPaper = () => {
     year: "",
     semester: "",
     className: "",
+    examType: "",  // ✅ Added examType
     paperFile: null
   });
 
   const token = localStorage.getItem("token");
 
   /* ---------------- GET PAPERS ---------------- */
-
   const fetchPapers = async () => {
     try {
-
-      const res = await axios.get(
-        "http://localhost:5000/api/papers/my-papers",
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
+      const res = await axiosInstance.get("/papers/my-papers", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setPapers(res.data.papers);
-
     } catch (error) {
       console.log(error);
     }
@@ -42,59 +35,31 @@ const ProfessorUploadPaper = () => {
   }, []);
 
   /* ---------------- HANDLE INPUT ---------------- */
-
   const handleChange = (e) => {
-
     if (e.target.name === "paperFile") {
-
-      setFormData({
-        ...formData,
-        paperFile: e.target.files[0]
-      });
-
-    } 
-    else if (e.target.name === "subjectCode") {
-
-      setFormData({
-        ...formData,
-        subjectCode: e.target.value.toUpperCase()
-      });
-
-    }
-    else {
-
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value
-      });
-
+      setFormData({ ...formData, paperFile: e.target.files[0] });
+    } else if (e.target.name === "subjectCode") {
+      setFormData({ ...formData, subjectCode: e.target.value.toUpperCase() });
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
     }
   };
 
   /* ---------------- UPLOAD PAPER ---------------- */
-
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
     const data = new FormData();
-
     Object.keys(formData).forEach((key) => {
       data.append(key, formData[key]);
     });
 
     try {
-
-      await axios.post(
-        "http://localhost:5000/api/papers/upload",
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
-          }
+      await axiosInstance.post("/papers/upload", data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data"
         }
-      );
+      });
 
       alert("Paper Uploaded Successfully");
 
@@ -105,20 +70,18 @@ const ProfessorUploadPaper = () => {
         year: "",
         semester: "",
         className: "",
+        examType: "",  // ✅ reset examType
         paperFile: null
       });
 
       fetchPapers();
-
     } catch (error) {
       console.log(error);
     }
   };
 
   /* ---------------- EDIT PAPER ---------------- */
-
   const handleEdit = (paper) => {
-
     setFormData({
       subjectName: paper.subjectName,
       subjectCode: paper.subjectCode,
@@ -126,30 +89,22 @@ const ProfessorUploadPaper = () => {
       year: paper.year,
       semester: paper.semester,
       className: paper.className || "",
+      examType: paper.examType || "", // ✅ set examType
       paperFile: null
     });
-
     setEditingId(paper._id);
   };
 
   const updatePaper = async (e) => {
-
     e.preventDefault();
-
     try {
-
-      await axios.put(
-        `http://localhost:5000/api/papers/edit/${editingId}`,
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await axiosInstance.put(`/papers/edit/${editingId}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       alert("Paper Updated Successfully");
 
       setEditingId(null);
-
       setFormData({
         subjectName: "",
         subjectCode: "",
@@ -157,53 +112,39 @@ const ProfessorUploadPaper = () => {
         year: "",
         semester: "",
         className: "",
+        examType: "", // ✅ reset examType
         paperFile: null
       });
 
       fetchPapers();
-
     } catch (error) {
       console.log(error);
     }
   };
 
   /* ---------------- DELETE ---------------- */
-
   const deletePaper = async (id) => {
-
     try {
-
-      await axios.delete(
-        `http://localhost:5000/api/papers/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
+      await axiosInstance.delete(`/papers/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       fetchPapers();
-
     } catch (error) {
       console.log(error);
     }
   };
 
   /* ---------------- DOWNLOAD ---------------- */
-
   const downloadPaper = (fileName) => {
-
     window.open(
-      `http://localhost:5000/api/papers/download/${fileName}`,
+      `${axiosInstance.defaults.baseURL}/papers/download/${fileName}`,
       "_blank"
     );
-
   };
 
   return (
-
     <div className=" md:p-6 max-w-full mx-auto">
-
       {/* Upload Form */}
-
       <h2 className="text-xl md:text-2xl font-bold mb-6">
         {editingId ? "Edit Paper" : "Upload Paper"}
       </h2>
@@ -212,7 +153,6 @@ const ProfessorUploadPaper = () => {
         onSubmit={editingId ? updatePaper : handleSubmit}
         className="grid grid-cols-2 md:grid-cols-2 gap-4 bg-white p-4 md:p-6 shadow-lg rounded-xl"
       >
-
         <input
           type="text"
           name="subjectName"
@@ -268,9 +208,7 @@ const ProfessorUploadPaper = () => {
           onChange={handleChange}
         >
           <option value="">Semester</option>
-          {[1,2,3,4,5,6,7,8].map((s)=>(
-            <option key={s}>{s}</option>
-          ))}
+          {[1,2,3,4,5,6,7,8].map((s)=>(<option key={s}>{s}</option>))}
         </select>
 
         <input
@@ -282,6 +220,18 @@ const ProfessorUploadPaper = () => {
           onChange={handleChange}
         />
 
+        {/* ----------------- EXAM TYPE ----------------- */}
+        <select
+          name="examType"
+          value={formData.examType}
+          className="border p-3 rounded w-full"
+          onChange={handleChange}
+        >
+          <option value="">Select Exam Type</option>
+          <option>Midterm 1</option>
+          <option>Midterm 2</option>
+        </select>
+
         <input
           type="file"
           name="paperFile"
@@ -290,7 +240,6 @@ const ProfessorUploadPaper = () => {
         />
 
         <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
-
           <button
             type="submit"
             className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
@@ -299,7 +248,6 @@ const ProfessorUploadPaper = () => {
           </button>
 
           {editingId && (
-
             <button
               type="button"
               onClick={() => setEditingId(null)}
@@ -307,46 +255,32 @@ const ProfessorUploadPaper = () => {
             >
               Cancel
             </button>
-
           )}
-
         </div>
-
       </form>
 
       {/* My Papers */}
-
       <h2 className="text-xl md:text-2xl font-bold mt-10 mb-4">
         My Uploaded Papers
       </h2>
 
       <div className="grid gap-4">
-
         {papers.map((paper) => (
-
           <div
             key={paper._id}
             className="bg-white p-4 rounded-xl shadow flex flex-col md:flex-row md:justify-between md:items-center gap-4"
           >
-
             <div>
-
-              <h3 className="font-semibold text-lg">
-                {paper.subjectName}
-              </h3>
-
+              <h3 className="font-semibold text-lg">{paper.subjectName}</h3>
               <p className="text-sm text-gray-500">
-                {paper.subjectCode} | {paper.branch} | {paper.year} | Semester {paper.semester} | {paper.className}
+                {paper.subjectCode} | {paper.branch} | {paper.year} | Semester {paper.semester} |  {paper.examType} | {paper.className} 
               </p>
-
               <p className="text-sm font-semibold text-gray-600">
                 Uploaded: {new Date(paper.createdAt).toLocaleDateString()}
               </p>
-
             </div>
 
             <div className="flex flex-wrap gap-2">
-
               <button
                 onClick={() => handleEdit(paper)}
                 className="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600"
@@ -367,17 +301,11 @@ const ProfessorUploadPaper = () => {
               >
                 Delete
               </button>
-
             </div>
-
           </div>
-
         ))}
-
       </div>
-
     </div>
-
   );
 };
 

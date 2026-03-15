@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import axiosInstance from "../../api/axios";  // ← axiosInstance import kiya
+import axiosInstance from "../api/axios";  // ← axiosInstance import kiya
 
-const ProfessorGetPaper = () => {
+const GetPaper = () => {
 
   const [papers, setPapers] = useState([]);
   const [search, setSearch] = useState("");
@@ -11,7 +11,7 @@ const ProfessorGetPaper = () => {
     year: "",
     semester: "",
     uploaderRole: "",
-    examType: "" // ✅ Added examType filter
+    examType: ""  // ✅ Added examType filter
   });
 
   const fetchPapers = async () => {
@@ -47,7 +47,7 @@ const ProfessorGetPaper = () => {
 
       {/* SEARCH + FILTER */}
       <div className="bg-white p-6 rounded-xl shadow-md mb-6">
-        <div className="grid md:grid-cols-7 gap-4">
+        <div className="grid md:grid-cols-6 gap-4">
 
           <input
             type="text"
@@ -89,7 +89,7 @@ const ProfessorGetPaper = () => {
             <option value="Student">Student</option>
           </select>
 
-          {/* ----------------- EXAM TYPE FILTER ----------------- */}
+          {/* ---------------- EXAM TYPE FILTER ---------------- */}
           <select name="examType" className="border p-2 rounded-md" onChange={handleFilterChange}>
             <option value="">Exam Type</option>
             <option value="Midterm 1">Midterm 1</option>
@@ -112,7 +112,7 @@ const ProfessorGetPaper = () => {
               <p><b>Year:</b> {paper.year}</p>
               <p><b>Semester:</b> {paper.semester}</p>
               {paper.className && <p><b>Class:</b> {paper.className}</p>}
-              {paper.examType && <p><b>Exam Type:</b> {paper.examType}</p>}  {/* ✅ Display examType */}
+              {paper.examType && <p><b>ExamType:</b> {paper.examType}</p>} {/* ✅ examType display */}
 
               {/* Uploaded Date */}
               <p className="text-xs text-gray-700 mt-2">
@@ -127,7 +127,7 @@ const ProfessorGetPaper = () => {
 
             <div className="mt-4 flex justify-between">
               <a
-                href={`${axiosInstance.defaults.baseURL}/papers/download/${paper.paperFile}`}  
+                href={`${axiosInstance.defaults.baseURL}/papers/download/${paper.paperFile}`}  // ← axiosInstance se URL
                 className="bg-green-500 text-white px-3 py-1 rounded-md"
               >
                 Download
@@ -146,4 +146,4 @@ const ProfessorGetPaper = () => {
   );
 };
 
-export default ProfessorGetPaper;
+export default GetPaper;

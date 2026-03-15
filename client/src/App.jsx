@@ -11,6 +11,7 @@ import StudentDashboard from "./pages/StudentDashboard/StudentDashboard"; // Stu
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Home from "./components/Home";
+import GetPapers from "./components/GetPapers";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -28,6 +29,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/filter-download-papers" element={<GetPapers />} />
         <Route
           path="/professor-dashboard/*"
           element={
