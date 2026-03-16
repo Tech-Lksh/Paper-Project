@@ -71,7 +71,7 @@ The goal of this platform is to provide students with a **centralized place to a
 - **Frontend:** React.js, Tailwind CSS  
 - **Backend:** Node.js, Express.js  
 - **Database:** MongoDB  
-- **Authentication:** JWT / Role-Based Access Control
+- **Authentication:** JWT / Role-Based Access Control, Helmet, CORS, and rate limiting middleware
 
 ---
 
