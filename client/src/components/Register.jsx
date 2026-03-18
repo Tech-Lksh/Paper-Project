@@ -233,6 +233,7 @@ const Register = () => {
                     <option>EEE</option>
                     <option>CIVIL</option>
                     <option>IT</option>
+                    <option>AIML</option>
                   </select>
                 </div>
               </div>

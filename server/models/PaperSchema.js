@@ -19,7 +19,7 @@ const paperSchema = new mongoose.Schema(
       type: String,
       required: true,
       uppercase: true,
-      enum: ["CSE", "MECH", "DS", "IOT", "ECE", "EEE", "CIVIL", "IT"]
+      enum: ["CSE", "MECH", "DS", "IOT", "ECE", "EEE", "CIVIL", "IT","AIML"]
     },
 
     year: {

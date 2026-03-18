@@ -18,7 +18,7 @@ const Profile = () => {
 
   const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
-  const departments = ["CSE", "MECH", "DS", "IOT", "ECE", "EEE", "CIVIL", "IT"];
+  const departments = ["CSE", "MECH", "DS", "IOT", "ECE", "EEE", "CIVIL", "IT","AIML"];
 
   const fetchProfile = async () => {
     try {

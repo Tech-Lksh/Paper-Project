@@ -186,6 +186,7 @@ const ProfessorUploadPaper = () => {
           <option>EEE</option>
           <option>CIVIL</option>
           <option>IT</option>
+          <option>AIML</option>
         </select>
 
         <select
