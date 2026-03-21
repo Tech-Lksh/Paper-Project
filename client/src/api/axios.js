@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://paper-project.onrender.com/api",
 });
 
 // Request interceptor to attach token
