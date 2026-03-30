@@ -18,6 +18,7 @@ The system has **two main roles: Student and Professor**.
 
 A **student can only log in after a professor approves their registration**, ensuring that the platform is used by verified students only.
 
+
 ---
 
 ## 🚀 Key Features
